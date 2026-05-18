@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiX } from 'react-icons/fi';
 import { useQuery } from '@tanstack/react-query';
 import { productAPI } from '../services/api';
-import useDebounce from '../hooks/Usedebounce'
+import { useDebounce } from '../hooks/Usedebounce'
 
 export default function SearchBar({ onSearch }) {
   const [query,  setQuery]  = useState('');
