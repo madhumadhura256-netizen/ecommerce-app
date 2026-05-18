@@ -9,7 +9,7 @@ import { useAuth }  from '../context/AuthContext';
 import { useCart }  from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 import ThemeToggle  from './ThemeToggle';
-import Searchbar    from './Searchbar';
+import SearchBar    from './Searchbar';
 
 export default function Navbar() {
   const { user, logout, isAuth } = useAuth();
