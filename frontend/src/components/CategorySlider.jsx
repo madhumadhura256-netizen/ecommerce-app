@@ -51,7 +51,7 @@ export default function CategorySlider() {
             onClick={() => navigate(`/category/${cat.slug}`)}
             className="flex flex-col items-center gap-2 flex-shrink-0"
           >
-            <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br ${cat.bg} flex items-center justify-center text-2xl sm:text-3xl shadow-md hover:scale-105 transition-transform duration-200`}>
+            <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br ${cat.bg} flex items-center justify-center text-xl sm:text-2xl shadow-md hover:scale-105 transition-transform duration-200`}>
               {cat.icon}
             </div>
             <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">

@@ -39,28 +39,40 @@ export default function Navbar() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 shadow-sm">
+    // ── Header: uses CSS variables so it reacts to light/dark correctly ──
+    <header
+      className="sticky top-0 z-50 backdrop-blur-md shadow-sm"
+      style={{
+        background: 'var(--bg-overlay)',
+        borderBottom: '1px solid var(--border-default)',
+      }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
 
-          {/* Logo */}
+          {/* ── Logo ── */}
           <Link to="/" className="flex items-center gap-2 flex-shrink-0">
             <span className="text-2xl">🛒</span>
-            <span className="font-display font-bold text-xl text-gray-900 dark:text-white">
+            <span
+              className="font-display font-bold text-xl"
+              style={{ color: 'var(--text-primary)' }}
+            >
               Shop<span className="text-brand-500">Zen</span>
             </span>
           </Link>
 
-          {/* Search (desktop) */}
+          {/* ── Search (desktop) ── */}
           <div className="hidden md:flex flex-1 max-w-xl">
             <SearchBar />
           </div>
 
-          {/* Right actions */}
+          {/* ── Right actions ── */}
           <div className="flex items-center gap-1 sm:gap-2">
-            {/* Mobile search */}
+
+            {/* Mobile search toggle */}
             <button
-              className="md:hidden btn-ghost p-2"
+              className="md:hidden btn-ghost p-2 rounded-lg"
+              style={{ color: 'var(--text-secondary)' }}
               onClick={() => setSearchOpen((s) => !s)}
               aria-label="Search"
             >
@@ -71,13 +83,23 @@ export default function Navbar() {
 
             {/* Wishlist */}
             {isAuth && (
-              <Link to="/wishlist" className="btn-ghost p-2 relative" aria-label="Wishlist">
+              <Link
+                to="/wishlist"
+                className="p-2 relative rounded-lg transition-colors"
+                style={{ color: 'var(--text-secondary)' }}
+                aria-label="Wishlist"
+              >
                 <FiHeart size={20} />
               </Link>
             )}
 
             {/* Cart */}
-            <Link to="/cart" className="btn-ghost p-2 relative" aria-label="Cart">
+            <Link
+              to="/cart"
+              className="p-2 relative rounded-lg transition-colors"
+              style={{ color: 'var(--text-secondary)' }}
+              aria-label="Cart"
+            >
               <FiShoppingCart size={20} />
               {cartCount > 0 && (
                 <motion.span
@@ -95,16 +117,24 @@ export default function Navbar() {
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setUserMenuOpen((o) => !o)}
-                  className="flex items-center gap-2 btn-ghost px-2 py-1.5 rounded-xl"
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-xl transition-colors"
+                  style={{ color: 'var(--text-primary)' }}
                 >
                   {user?.avatar ? (
-                    <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
+                    <img
+                      src={user.avatar}
+                      alt={user.name}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center text-white font-bold text-sm">
                       {user?.name?.[0]?.toUpperCase()}
                     </div>
                   )}
-                  <span className="hidden sm:block text-sm font-medium max-w-[80px] truncate">
+                  <span
+                    className="hidden sm:block text-sm font-medium max-w-[80px] truncate"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
                     {user?.name?.split(' ')[0]}
                   </span>
                 </button>
@@ -116,26 +146,55 @@ export default function Navbar() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -8, scale: 0.95 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 mt-2 w-52 card py-2 shadow-xl border border-gray-100 dark:border-gray-700"
+                      className="absolute right-0 mt-2 w-52 rounded-xl py-2 shadow-xl z-50"
+                      style={{
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border-default)',
+                      }}
                     >
-                      <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
-                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user?.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
+                      {/* User info header */}
+                      <div
+                        className="px-4 py-2"
+                        style={{ borderBottom: '1px solid var(--border-subtle)' }}
+                      >
+                        <p
+                          className="text-sm font-semibold truncate"
+                          style={{ color: 'var(--text-primary)' }}
+                        >
+                          {user?.name}
+                        </p>
+                        <p
+                          className="text-xs truncate"
+                          style={{ color: 'var(--text-muted)' }}
+                        >
+                          {user?.email}
+                        </p>
                       </div>
+
+                      {/* Menu items */}
                       {[
-                        { to: '/account', icon: FiSettings, label: 'My Account' },
-                        { to: '/orders',  icon: FiPackage,  label: 'My Orders' },
-                        { to: '/wishlist',icon: FiHeart,    label: 'Wishlist' },
+                        { to: '/account',  icon: FiSettings, label: 'My Account' },
+                        { to: '/orders',   icon: FiPackage,  label: 'My Orders'  },
+                        { to: '/wishlist', icon: FiHeart,    label: 'Wishlist'   },
                       ].map(({ to, icon: Icon, label }) => (
-                        <Link key={to} to={to} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                        <Link
+                          key={to}
+                          to={to}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors"
+                          style={{ color: 'var(--text-secondary)' }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
                           <Icon size={16} />
                           {label}
                         </Link>
                       ))}
-                      <hr className="my-1 border-gray-100 dark:border-gray-700" />
+
+                      <hr style={{ borderColor: 'var(--border-subtle)', margin: '4px 0' }} />
+
                       <button
                         onClick={logout}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 w-full text-left transition-colors"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm w-full text-left transition-colors text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
                       >
                         <FiLogOut size={16} />
                         Logout
@@ -145,15 +204,28 @@ export default function Navbar() {
                 </AnimatePresence>
               </div>
             ) : (
+              /* ── Desktop Login / Sign Up ── */
               <div className="hidden sm:flex items-center gap-2">
-                <Link to="/login"    className="btn-ghost text-sm px-3 py-2">Login</Link>
-                <Link to="/register" className="btn-primary text-sm px-4 py-2">Sign Up</Link>
+                <Link
+                  to="/login"
+                  className="text-sm px-3 py-2 rounded-xl font-medium transition-colors"
+                  style={{ color: 'var(--text-primary)', background: 'var(--bg-secondary)', border: '1px solid var(--border-default)' }}
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="btn-primary text-sm px-4 py-2"
+                >
+                  Sign Up
+                </Link>
               </div>
             )}
 
             {/* Mobile hamburger */}
             <button
-              className="sm:hidden btn-ghost p-2"
+              className="sm:hidden p-2 rounded-lg transition-colors"
+              style={{ color: 'var(--text-primary)' }}
               onClick={() => setMobileOpen((o) => !o)}
               aria-label="Menu"
             >
@@ -162,7 +234,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile search bar */}
+        {/* ── Mobile search bar ── */}
         <AnimatePresence>
           {searchOpen && (
             <motion.div
@@ -176,26 +248,76 @@ export default function Navbar() {
           )}
         </AnimatePresence>
 
-        {/* Mobile menu */}
+        {/* ── Mobile menu ── */}
         <AnimatePresence>
           {mobileOpen && (
             <motion.nav
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="sm:hidden overflow-hidden border-t border-gray-100 dark:border-gray-800 py-3 space-y-1"
+              className="sm:hidden overflow-hidden py-3 space-y-1"
+              style={{ borderTop: '1px solid var(--border-subtle)' }}
             >
               {!isAuth ? (
                 <>
-                  <Link to="/login"    className="block px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">Login</Link>
-                  <Link to="/register" className="block px-4 py-2.5 rounded-xl text-sm font-medium text-brand-500">Sign Up</Link>
+                  {/* ── Mobile Login ── */}
+                  <Link
+                    to="/login"
+                    className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                    style={{
+                      color: 'var(--text-primary)',
+                      background: 'var(--bg-secondary)',
+                    }}
+                  >
+                    Login
+                  </Link>
+                  {/* ── Mobile Sign Up ── */}
+                  <Link
+                    to="/register"
+                    className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                    style={{
+                      color: '#f94a16',           /* brand-500 */
+                      background: 'rgba(249,74,22,0.08)',
+                    }}
+                  >
+                    Sign Up
+                  </Link>
                 </>
               ) : (
                 <>
-                  <Link to="/account"  className="block px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">My Account</Link>
-                  <Link to="/orders"   className="block px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">My Orders</Link>
-                  <Link to="/wishlist" className="block px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">Wishlist</Link>
-                  <button onClick={logout} className="block w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium text-red-500">Logout</button>
+                  <Link
+                    to="/account"
+                    className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                    style={{ color: 'var(--text-primary)' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    My Account
+                  </Link>
+                  <Link
+                    to="/orders"
+                    className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                    style={{ color: 'var(--text-primary)' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    My Orders
+                  </Link>
+                  <Link
+                    to="/wishlist"
+                    className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                    style={{ color: 'var(--text-primary)' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    Wishlist
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className="block w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium text-red-500"
+                  >
+                    Logout
+                  </button>
                 </>
               )}
             </motion.nav>
