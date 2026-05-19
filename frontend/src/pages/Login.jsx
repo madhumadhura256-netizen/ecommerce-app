@@ -215,7 +215,7 @@ export default function Login() {
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 1.9rem;
           font-weight: 800;
-          color: var(--text-primary, #111);
+          color: var(--text-primary, #888);
           margin: 0 0 6px;
         }
         .auth-sub { color: var(--text-muted, #888); margin: 0; font-size: 0.95rem; }
@@ -238,7 +238,7 @@ export default function Login() {
         .field-label {
           font-size: 0.85rem;
           font-weight: 700;
-          color: var(--text-primary, #111);
+          color: var(--text-primary, #717171);
         }
 
         /* ── Input wrapper ── */

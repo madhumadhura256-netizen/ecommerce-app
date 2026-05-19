@@ -277,7 +277,7 @@ export default function Register() {
         .auth-title {
           font-family: 'Playfair Display', Georgia, serif;
           font-size: 1.9rem; font-weight: 800;
-          color: var(--text-primary, #111);
+          color: var(--text-primary, #676767);
           margin: 0 0 4px;
         }
         .auth-sub { color: var(--text-muted, #888); margin: 0; font-size: 0.88rem; }
@@ -329,7 +329,7 @@ export default function Register() {
         /* ── Form ── */
         .auth-form { display: flex; flex-direction: column; gap: 18px; }
         .field-group { display: flex; flex-direction: column; gap: 6px; }
-        .field-label { font-size: 0.85rem; font-weight: 700; color: var(--text-primary, #111); }
+        .field-label { font-size: 0.85rem; font-weight: 700; color: var(--text-primary, #515050); }
 
         /* ── Input wrapper ── */
         .input-wrap {
@@ -448,7 +448,7 @@ export default function Register() {
           padding: 14px 20px; border-radius: 12px;
           border: 1.5px solid var(--border-default, #d1d5db);
           background: transparent;
-          color: var(--text-primary, #111);
+          color: var(--text-primary, #a04a2b);
           font-weight: 700; cursor: pointer; font-size: 0.95rem;
           transition: background 0.2s;
         }
