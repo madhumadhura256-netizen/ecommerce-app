@@ -39,12 +39,21 @@ export default function Navbar() {
   }, []);
 
   return (
-    // ── Header: uses CSS variables so it reacts to light/dark correctly ──
     <header
-      className="sticky top-0 z-50 backdrop-blur-md shadow-sm"
+      className="sticky top-0 backdrop-blur-md shadow-sm"
       style={{
         background: 'var(--bg-overlay)',
         borderBottom: '1px solid var(--border-default)',
+        /*
+          KEY FIX for search-behind-carousel bug:
+          z-index must be high enough so the sticky header AND its
+          absolutely-positioned children (search dropdown) always sit
+          above the hero/carousel section beneath it.
+          z-[100] (100) is plenty — carousel typically has no z-index.
+          We no longer use Tailwind's z-50 (50) because the carousel
+          or its wrapper can accidentally win the stacking contest.
+        */
+        zIndex: 100,
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -146,10 +155,11 @@ export default function Navbar() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -8, scale: 0.95 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 mt-2 w-52 rounded-xl py-2 shadow-xl z-50"
+                      className="absolute right-0 mt-2 w-52 rounded-xl py-2 shadow-xl"
                       style={{
                         background: 'var(--bg-card)',
                         border: '1px solid var(--border-default)',
+                        zIndex: 9999,
                       }}
                     >
                       {/* User info header */}
@@ -171,7 +181,6 @@ export default function Navbar() {
                         </p>
                       </div>
 
-                      {/* Menu items */}
                       {[
                         { to: '/account',  icon: FiSettings, label: 'My Account' },
                         { to: '/orders',   icon: FiPackage,  label: 'My Orders'  },
@@ -204,7 +213,6 @@ export default function Navbar() {
                 </AnimatePresence>
               </div>
             ) : (
-              /* ── Desktop Login / Sign Up ── */
               <div className="hidden sm:flex items-center gap-2">
                 <Link
                   to="/login"
@@ -241,7 +249,13 @@ export default function Navbar() {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="md:hidden overflow-hidden pb-3"
+              className="md:hidden pb-3"
+              /*
+                IMPORTANT: do NOT add overflow-hidden here.
+                overflow-hidden clips the search dropdown that extends
+                below this panel. The panel animates height via framer-motion,
+                which doesn't require overflow:hidden to work correctly.
+              */
             >
               <SearchBar onSearch={() => setSearchOpen(false)} />
             </motion.div>
@@ -260,58 +274,39 @@ export default function Navbar() {
             >
               {!isAuth ? (
                 <>
-                  {/* ── Mobile Login ── */}
                   <Link
                     to="/login"
                     className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-                    style={{
-                      color: 'var(--text-primary)',
-                      background: 'var(--bg-secondary)',
-                    }}
+                    style={{ color: 'var(--text-primary)', background: 'var(--bg-secondary)' }}
                   >
                     Login
                   </Link>
-                  {/* ── Mobile Sign Up ── */}
                   <Link
                     to="/register"
                     className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-                    style={{
-                      color: '#f94a16',           /* brand-500 */
-                      background: 'rgba(249,74,22,0.08)',
-                    }}
+                    style={{ color: '#f94a16', background: 'rgba(249,74,22,0.08)' }}
                   >
                     Sign Up
                   </Link>
                 </>
               ) : (
                 <>
-                  <Link
-                    to="/account"
-                    className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-                    style={{ color: 'var(--text-primary)' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    My Account
-                  </Link>
-                  <Link
-                    to="/orders"
-                    className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-                    style={{ color: 'var(--text-primary)' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    My Orders
-                  </Link>
-                  <Link
-                    to="/wishlist"
-                    className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-                    style={{ color: 'var(--text-primary)' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    Wishlist
-                  </Link>
+                  {[
+                    { to: '/account',  label: 'My Account' },
+                    { to: '/orders',   label: 'My Orders'  },
+                    { to: '/wishlist', label: 'Wishlist'   },
+                  ].map(({ to, label }) => (
+                    <Link
+                      key={to}
+                      to={to}
+                      className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                      style={{ color: 'var(--text-primary)' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      {label}
+                    </Link>
+                  ))}
                   <button
                     onClick={logout}
                     className="block w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium text-red-500"
