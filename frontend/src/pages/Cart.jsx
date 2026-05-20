@@ -1,7 +1,35 @@
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 import { AuthContext } from "../context/AuthContext";
+
+// ── Valid coupon codes ──────────────────────────────────────────────────────
+// type: "flat" = fixed rupee off | "percent" = percentage off
+const COUPONS = {
+  SAVE50:    { type: "flat",    value: 50,  label: "₹50 flat off",       minOrder: 0   },
+  SAVE100:   { type: "flat",    value: 100, label: "₹100 flat off",      minOrder: 199 },
+  WELCOME20: { type: "percent", value: 20,  label: "20% off (max ₹150)", minOrder: 0,  cap: 150 },
+  FESTIVE30: { type: "percent", value: 30,  label: "30% off (max ₹200)", minOrder: 299, cap: 200 },
+  FREESHIP:  { type: "flat",    value: 49,  label: "Free shipping",       minOrder: 0   },
+};
+
+// Auto-discount tiers (applied when no coupon)
+const getAutoDiscount = (total) => {
+  if (total >= 300) return { amount: 70,  label: "₹300+ offer"  };
+  if (total >= 200) return { amount: 50,  label: "₹200+ offer"  };
+  return { amount: 0, label: "" };
+};
+
+const calcCouponDiscount = (code, cartTotal) => {
+  const c = COUPONS[code.trim().toUpperCase()];
+  if (!c) return { valid: false, msg: "Invalid coupon code" };
+  if (cartTotal < c.minOrder)
+    return { valid: false, msg: `Min order ₹${c.minOrder} required` };
+  let amount = c.type === "flat"
+    ? c.value
+    : Math.min(Math.round(cartTotal * c.value / 100), c.cap ?? Infinity);
+  return { valid: true, amount, label: c.label };
+};
 
 export default function Cart() {
   const navigate = useNavigate();
@@ -17,27 +45,62 @@ export default function Cart() {
 
   const { user } = useContext(AuthContext) || {};
 
-  const [address, setAddress] = useState("");
+  const [address, setAddress]             = useState("");
   const [confirmedAddress, setConfirmedAddress] = useState("");
-  const [couponInput, setCouponInput] = useState("");
-  const [couponApplied, setCouponApplied] = useState(false);
-  const [removingId, setRemovingId] = useState(null);
+  const [couponInput, setCouponInput]     = useState("");
+  const [couponState, setCouponState]     = useState(null); // { valid, amount, label, msg, code }
+  const [removingId, setRemovingId]       = useState(null);
+  const [couponShake, setCouponShake]     = useState(false);
 
-  const getAutoDiscount = (total) => {
-    if (total >= 300) return 70;
-    if (total >= 200) return 50;
-    return 0;
-  };
+  // ── Auto-apply coupon if URL has ?coupon=XXX ─────────────────────────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("coupon");
+    if (code) {
+      setCouponInput(code.toUpperCase());
+      const result = calcCouponDiscount(code, cartTotal);
+      if (result.valid) {
+        setCouponState({ ...result, code: code.toUpperCase() });
+      }
+    }
+  }, []); // run once on mount
+
+  // Re-validate coupon when cart total changes (so min-order check stays live)
+  useEffect(() => {
+    if (couponState?.code) {
+      const result = calcCouponDiscount(couponState.code, cartTotal);
+      setCouponState(prev => ({ ...prev, ...result, code: prev.code }));
+    }
+  }, [cartTotal]);
 
   const autoDiscount = getAutoDiscount(cartTotal);
-  const manualDiscount = couponApplied ? (Number(couponInput) || 0) : 0;
-  const appliedDiscount = manualDiscount > 0 ? manualDiscount : autoDiscount;
-  const shipping = cartTotal >= 99 ? 0 : 49;
-  const tax = Math.round(cartTotal * 0.05);
-  const finalTotal = cartTotal + shipping + tax - appliedDiscount;
+
+  // Coupon wins if valid; otherwise fall back to auto-discount
+  const appliedCoupon    = couponState?.valid ? couponState : null;
+  const appliedDiscount  = appliedCoupon ? appliedCoupon.amount : autoDiscount.amount;
+  const discountSource   = appliedCoupon ? `Coupon "${appliedCoupon.code}"` : autoDiscount.label;
+
+  const shipping  = cartTotal >= 99 ? 0 : 49;
+  const tax       = Math.round(cartTotal * 0.05);
+  const finalTotal = Math.max(0, cartTotal + shipping + tax - appliedDiscount);
 
   const dp = (p) =>
     p.discount ? Math.round(p.price - (p.price * p.discount) / 100) : p.price;
+
+  const handleApplyCoupon = () => {
+    if (!couponInput.trim()) return;
+    const result = calcCouponDiscount(couponInput, cartTotal);
+    setCouponState({ ...result, code: couponInput.trim().toUpperCase() });
+    if (!result.valid) {
+      setCouponShake(true);
+      setTimeout(() => setCouponShake(false), 500);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setCouponState(null);
+    setCouponInput("");
+  };
 
   const handleRemove = (id) => {
     setRemovingId(id);
@@ -158,9 +221,11 @@ export default function Cart() {
           {/* RIGHT — Summary */}
           <div className="summary-col">
 
-            {/* Coupon */}
+            {/* ── Coupon Card ── */}
             <div className="summary-card">
               <h3 className="summary-section-title">🎁 Offers & Coupons</h3>
+
+              {/* Auto-discount chips */}
               <div className="auto-offers">
                 <div className={`offer-chip ${cartTotal >= 200 ? "active" : ""}`}>
                   ₹200 → <strong>₹50 OFF</strong>
@@ -169,21 +234,63 @@ export default function Cart() {
                   ₹300 → <strong>₹70 OFF</strong>
                 </div>
               </div>
-              <div className="coupon-row">
-                <input
-                  className="coupon-input"
-                  placeholder="Enter custom code"
-                  value={couponInput}
-                  onChange={(e) => { setCouponInput(e.target.value); setCouponApplied(false); }}
-                />
-                <button
-                  className="btn-apply"
-                  onClick={() => setCouponApplied(true)}
-                  disabled={!couponInput}
-                >Apply</button>
+
+              {/* Available coupon hints */}
+              <div className="coupon-hints">
+                <p className="hints-label">Available codes:</p>
+                <div className="hints-list">
+                  {Object.entries(COUPONS).map(([code, c]) => (
+                    <button
+                      key={code}
+                      className={`hint-chip ${couponState?.code === code && couponState.valid ? "hint-active" : ""}`}
+                      onClick={() => {
+                        setCouponInput(code);
+                        const result = calcCouponDiscount(code, cartTotal);
+                        setCouponState({ ...result, code });
+                      }}
+                    >
+                      {code}
+                    </button>
+                  ))}
+                </div>
               </div>
-              {couponApplied && manualDiscount > 0 && (
-                <p className="coupon-success">✅ ₹{manualDiscount} discount applied!</p>
+
+              {/* Coupon input */}
+              {!appliedCoupon ? (
+                <div className={`coupon-row ${couponShake ? "shake" : ""}`}>
+                  <input
+                    className="coupon-input"
+                    placeholder="Enter coupon code"
+                    value={couponInput}
+                    onChange={(e) => {
+                      setCouponInput(e.target.value.toUpperCase());
+                      setCouponState(null);
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+                  />
+                  <button
+                    className="btn-apply"
+                    onClick={handleApplyCoupon}
+                    disabled={!couponInput.trim()}
+                  >Apply</button>
+                </div>
+              ) : (
+                /* Applied coupon pill */
+                <div className="coupon-applied-row">
+                  <div className="coupon-pill">
+                    <span className="pill-icon">🏷</span>
+                    <div>
+                      <p className="pill-code">{appliedCoupon.code}</p>
+                      <p className="pill-desc">{appliedCoupon.label} — saving ₹{appliedCoupon.amount}</p>
+                    </div>
+                    <button className="pill-remove" onClick={handleRemoveCoupon} title="Remove coupon">✕</button>
+                  </div>
+                </div>
+              )}
+
+              {/* Error message */}
+              {couponState && !couponState.valid && (
+                <p className="coupon-error">❌ {couponState.msg}</p>
               )}
             </div>
 
@@ -257,7 +364,7 @@ export default function Cart() {
                 </div>
                 {appliedDiscount > 0 && (
                   <div className="price-row discount-row">
-                    <span>Discount</span>
+                    <span>Discount {discountSource ? `(${discountSource})` : ""}</span>
                     <span>−₹{appliedDiscount}</span>
                   </div>
                 )}
@@ -458,16 +565,46 @@ const cartStyles = `
     background: var(--bg-hover, #f9fafb); transition: all 0.3s;
   }
   .offer-chip.active {
-    border-color: #16a34a; color: #16a34a;
-    background: #dcfce7;
+    border-color: #16a34a; color: #16a34a; background: #dcfce7;
   }
+
+  /* Coupon hints */
+  .coupon-hints { margin-bottom: 12px; }
+  .hints-label {
+    font-size: 0.72rem; font-weight: 600;
+    color: var(--text-muted, #888); margin: 0 0 7px;
+  }
+  .hints-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .hint-chip {
+    padding: 4px 10px; border-radius: 8px; font-size: 0.74rem; font-weight: 800;
+    border: 1.5px dashed var(--border, #d1d5db);
+    background: var(--bg-hover, #f9fafb);
+    color: var(--text, #555);
+    cursor: pointer; transition: all 0.2s;
+    font-family: 'DM Sans', monospace; letter-spacing: 0.03em;
+  }
+  html.dark .hint-chip { border-color: rgba(255,255,255,0.1); color: #aaa; }
+  .hint-chip:hover { border-color: #FF6B35; color: #FF6B35; background: #fff5f0; }
+  .hint-chip.hint-active {
+    border-color: #16a34a; background: #dcfce7; color: #16a34a; border-style: solid;
+  }
+
+  /* Coupon input */
   .coupon-row { display: flex; gap: 8px; }
+  .coupon-row.shake { animation: shake 0.4s ease; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%      { transform: translateX(-6px); }
+    40%      { transform: translateX(6px); }
+    60%      { transform: translateX(-4px); }
+    80%      { transform: translateX(4px); }
+  }
   .coupon-input {
     flex: 1; padding: 10px 14px; border-radius: 10px;
     border: 1.5px solid var(--border, #d1d5db);
     background: var(--bg-hover, #f9fafb); color: var(--text, #111);
     font-size: 0.88rem; outline: none; font-family: 'DM Sans', sans-serif;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s; text-transform: uppercase; letter-spacing: 0.04em;
   }
   html.dark .coupon-input { background: #242420; border-color: rgba(255,255,255,0.1); color: #f0efe9; }
   .coupon-input:focus { border-color: #FF6B35; }
@@ -478,7 +615,32 @@ const cartStyles = `
   }
   .btn-apply:disabled { opacity: 0.4; cursor: not-allowed; }
   .btn-apply:not(:disabled):hover { opacity: 0.88; }
-  .coupon-success { font-size: 0.82rem; color: #16a34a; font-weight: 600; margin: 8px 0 0; }
+
+  /* Applied coupon pill */
+  .coupon-applied-row { margin-top: 2px; }
+  .coupon-pill {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 12px;
+    background: linear-gradient(135deg, #dcfce7, #d1fae5);
+    border: 1.5px solid #86efac;
+    animation: pillPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes pillPop {
+    from { opacity: 0; transform: scale(0.9); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  .pill-icon { font-size: 1.2rem; flex-shrink: 0; }
+  .pill-code { font-size: 0.85rem; font-weight: 800; color: #065f46; margin: 0; letter-spacing: 0.04em; }
+  .pill-desc { font-size: 0.72rem; color: #16a34a; font-weight: 500; margin: 2px 0 0; }
+  .pill-remove {
+    margin-left: auto; flex-shrink: 0;
+    background: none; border: none; color: #16a34a;
+    cursor: pointer; font-size: 0.9rem; padding: 2px 4px;
+    opacity: 0.6; transition: opacity 0.2s;
+  }
+  .pill-remove:hover { opacity: 1; }
+
+  .coupon-error  { font-size: 0.82rem; color: #dc2626; font-weight: 600; margin: 8px 0 0; }
 
   /* Address */
   .address-input {
