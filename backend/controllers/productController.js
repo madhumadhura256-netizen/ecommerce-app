@@ -13,7 +13,7 @@ export const getProducts = async (req, res) => {
       sortBy = 'createdAt',
       order = 'desc',
       page = 1,
-      limit = 12,
+      limit = 1000,
       featured,
     } = req.query;
 
