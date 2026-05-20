@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import API from '../api/axios';
 
 export default function AdminDashboard() {
   const [products, setProducts] = useState([]);
@@ -16,7 +16,7 @@ export default function AdminDashboard() {
   // FETCH PRODUCTS
   const fetchProducts = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/products");
+      const res = await API.get("/products");
       setProducts(res.data.products || []);
     } catch (err) {
       console.log("Fetch error:", err);
@@ -51,12 +51,7 @@ export default function AdminDashboard() {
         images: formData.image ? [formData.image] : [],
       };
 
-      await axios.post("http://localhost:5000/api/products", payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
+      await API.post("/products", payload);
       alert("Product added ✅");
 
       setFormData({
@@ -80,9 +75,7 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem("token");
 
-      await axios.delete(`http://localhost:5000/api/products/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+     await API.delete(`/products/${id}`); 
 
       fetchProducts();
     } catch (err) {
