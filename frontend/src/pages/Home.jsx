@@ -126,7 +126,7 @@ export default function Home() {
           <div className="products-grid">
             {featured.map((p, idx) => (
               <div key={p._id} className="product-card" style={{ animationDelay: `${idx * 60}ms` }}>
-                <Link to={`/product/${p._id}`} className="product-img-wrap">
+                <Link to={`/products/${p._id}`} className="product-img-wrap">
                   {p.images?.[0]
                     ? <img src={p.images[0]} alt={p.name} className="product-img" loading="lazy" />
                     : <div className="product-img-placeholder">

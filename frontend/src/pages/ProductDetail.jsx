@@ -204,7 +204,7 @@ export default function ProductDetail() {
           <h2 className="section-title">Related Products</h2>
           <div className="related-grid">
             {related.map(p => (
-              <Link key={p._id} to={`/product/${p._id}`} className="related-card">
+              <Link key={p._id} to={`/products/${p._id}`} className="related-card">
                 <div className="related-img">
                   {p.images?.[0] ? <img src={p.images[0]} alt={p.name} /> : <span>{CATS[p.category]||"📦"}</span>}
                 </div>
