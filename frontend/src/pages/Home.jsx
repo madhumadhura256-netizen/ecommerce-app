@@ -325,15 +325,17 @@ export default function Home() {
           --accent: #FF6B35;
         }
 
-        .home-page { min-height: 100vh; background: var(--bg-page); }
+       .home-page { min-height: 100vh; background: var(--bg-page); isolation: isolate; }
+
 
         /* ── CAROUSEL ── */
         .hero-banner {
-          position: relative;
-          height: 360px;
-          overflow: hidden;
-          user-select: none;
-        }
+  position: relative;
+  height: 360px;
+  overflow: hidden;
+  user-select: none;
+  isolation: isolate;
+}
         @media (max-width: 600px) { .hero-banner { height: 280px; } }
 
         /* Slides */

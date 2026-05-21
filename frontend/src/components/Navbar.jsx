@@ -53,7 +53,7 @@ export default function Navbar() {
           We no longer use Tailwind's z-50 (50) because the carousel
           or its wrapper can accidentally win the stacking contest.
         */
-        zIndex: 100,
+        zIndex: 1000,
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -156,11 +156,7 @@ export default function Navbar() {
                       exit={{ opacity: 0, y: -8, scale: 0.95 }}
                       transition={{ duration: 0.15 }}
                       className="absolute right-0 mt-2 w-52 rounded-xl py-2 shadow-xl"
-                      style={{
-                        background: 'var(--bg-card)',
-                        border: '1px solid var(--border-default)',
-                        zIndex: 9999,
-                      }}
+                       style={{ overflow: 'visible', position: 'relative', zIndex: 1000 }}
                     >
                       {/* User info header */}
                       <div

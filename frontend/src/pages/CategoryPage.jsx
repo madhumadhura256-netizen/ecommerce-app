@@ -29,55 +29,44 @@ export default function CategoryPage() {
   const [wishlist, setWishlist] = useState(() => JSON.parse(localStorage.getItem("wishlist") || "[]"));
 
   useEffect(() => {
-  const fetchProducts = async () => {
-    setLoading(true);
+    const fetchProducts = async () => {
+      setLoading(true);
+      try {
+        const res = await productAPI.getAll();
+        const allProducts = res.data?.products || res.data || [];
 
-    try {
-      let res;
+        const filteredProducts =
+          category === "all"
+            ? allProducts
+            : allProducts.filter(
+                (p) =>
+                  p.category &&
+                  p.category.toLowerCase().trim() ===
+                    category.toLowerCase().trim()
+              );
 
-      if (!category || category === "all") {
-        res = await productAPI.getAll();
-      } else {
-        res = await productAPI.getAll(); // 👈 IMPORTANT CHANGE (fetch all first)
+        setProducts(filteredProducts);
+
+        const max = Math.max(
+          ...filteredProducts.map((p) => p.price || 0),
+          1000
+        );
+        setMaxPrice(max);
+        setPriceRange([0, max]);
+      } catch (err) {
+        console.log("Category fetch error:", err);
+        setProducts([]);
+      } finally {
+        setLoading(false);
       }
-
-      const allProducts = res.data?.products || res.data || [];
-
-      // 🔥 FIX CATEGORY MATCHING (case + space safe)
-      const filteredProducts =
-        category === "all"
-          ? allProducts
-          : allProducts.filter(
-              (p) =>
-                p.category &&
-                p.category.toLowerCase().trim() ===
-                  category.toLowerCase().trim()
-            );
-
-      setProducts(filteredProducts);
-
-      const max = Math.max(
-        ...filteredProducts.map((p) => p.price || 0),
-        1000
-      );
-
-      setMaxPrice(max);
-      setPriceRange([0, max]);
-    } catch (err) {
-      console.log("Category fetch error:", err);
-
-      setProducts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchProducts();
-}, [category]);
+    };
+    fetchProducts();
+  }, [category]);
 
   const toggleWishlist = id => {
     const updated = wishlist.includes(id) ? wishlist.filter(x=>x!==id) : [...wishlist, id];
-    setWishlist(updated); localStorage.setItem("wishlist", JSON.stringify(updated));
+    setWishlist(updated);
+    localStorage.setItem("wishlist", JSON.stringify(updated));
   };
 
   const dp = p => p.discount ? Math.round(p.price - p.price*p.discount/100) : p.price;
@@ -87,9 +76,9 @@ export default function CategoryPage() {
     .filter(p => p.ratings >= minRating)
     .filter(p => inStockOnly ? p.stock > 0 : true)
     .sort((a,b) => {
-      if (sort==="price_asc") return dp(a)-dp(b);
+      if (sort==="price_asc")  return dp(a)-dp(b);
       if (sort==="price_desc") return dp(b)-dp(a);
-      if (sort==="rating") return b.ratings-a.ratings;
+      if (sort==="rating")     return b.ratings-a.ratings;
       return 0;
     });
 
@@ -98,7 +87,9 @@ export default function CategoryPage() {
       {/* Header */}
       <div className="cat-header">
         <div className="cat-header-inner">
-          <nav className="breadcrumb"><Link to="/">Home</Link> / <span>{CATS[category]||category}</span></nav>
+          <nav className="breadcrumb">
+            <Link to="/">Home</Link> / <span>{CATS[category]||category}</span>
+          </nav>
           <h1 className="cat-title">{CATS[category] || category}</h1>
           <p className="cat-count">{filtered.length} products found</p>
         </div>
@@ -177,24 +168,36 @@ export default function CategoryPage() {
               <span className="empty-icon">🔍</span>
               <h3>No products found</h3>
               <p>Try adjusting your filters</p>
-              <button className="btn-reset" onClick={()=>{setPriceRange([0,maxPrice]);setMinRating(0);setInStockOnly(false);}}>Clear Filters</button>
+              <button className="btn-reset" onClick={()=>{setPriceRange([0,maxPrice]);setMinRating(0);setInStockOnly(false);}}>
+                Clear Filters
+              </button>
             </div>
           ) : (
             <div className="products-grid">
               {filtered.map((p,idx)=>(
                 <div key={p._id} className="product-card" style={{animationDelay:`${idx*40}ms`}}>
-                  <Link to={`/product/${p._id}`} className="product-img-wrap">
+
+                  {/* ✅ FIXED: was /product/ (missing 's'), now /products/ */}
+                  <Link to={`/products/${p._id}`} className="product-img-wrap">
                     {p.images?.[0]
                       ? <img src={p.images[0]} alt={p.name} className="product-img" loading="lazy"/>
                       : <div className="product-img-placeholder">📦</div>}
                     {p.discount>0&&<span className="badge-discount">{p.discount}% OFF</span>}
                   </Link>
-                  <button className={`wishlist-btn ${wishlist.includes(p._id)?"active":""}`} onClick={()=>toggleWishlist(p._id)}>
+
+                  <button
+                    className={`wishlist-btn ${wishlist.includes(p._id)?"active":""}`}
+                    onClick={()=>toggleWishlist(p._id)}
+                  >
                     {wishlist.includes(p._id)?"❤️":"🤍"}
                   </button>
+
                   <div className="product-info">
                     <p className="product-category">{p.category}</p>
-                    <h3 className="product-name">{p.name}</h3>
+                    {/* ✅ FIXED: product name also links correctly */}
+                    <Link to={`/products/${p._id}`} style={{textDecoration:"none"}}>
+                      <h3 className="product-name">{p.name}</h3>
+                    </Link>
                     <div className="product-rating">
                       {"★".repeat(Math.floor(p.ratings))}{"☆".repeat(5-Math.floor(p.ratings))}
                       <span className="rating-count">({p.numReviews})</span>
@@ -203,7 +206,11 @@ export default function CategoryPage() {
                       <span className="product-price">₹{dp(p).toLocaleString()}</span>
                       {p.discount>0&&<span className="product-mrp">₹{p.price.toLocaleString()}</span>}
                     </div>
-                    <button className="btn-add-cart" onClick={()=>addToCart({...p,quantity:1})} disabled={p.stock===0}>
+                    <button
+                      className="btn-add-cart"
+                      onClick={()=>addToCart({...p,quantity:1})}
+                      disabled={p.stock===0}
+                    >
                       {p.stock===0?"Out of Stock":"Add to Cart 🛒"}
                     </button>
                   </div>
@@ -260,6 +267,7 @@ export default function CategoryPage() {
         .product-info { padding:12px; }
         .product-category { font-size:0.7rem; font-weight:700; color:#FF6B35; text-transform:uppercase; letter-spacing:.05em; margin:0 0 3px; }
         .product-name { font-size:0.9rem; font-weight:700; color:var(--text,#111); margin:0 0 5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .product-name:hover { color:#FF6B35; }
         .product-rating { font-size:0.75rem; color:#f59e0b; margin-bottom:6px; }
         .rating-count { color:var(--text-muted,#888); margin-left:3px; }
         .product-price-row { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
