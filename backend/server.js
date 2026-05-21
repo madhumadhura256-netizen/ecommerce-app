@@ -29,17 +29,15 @@ requiredEnvVars.forEach((key) => {
   }
 });
 
-// Connect Database
-connectDB();
-
 const app = express();
 
 // Security & Logging Middleware
 app.use(helmet());
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://shopzen-pi.vercel.app']
-}))
+  origin: ['http://localhost:5173', 'https://shopzen-pi.vercel.app'],
+}));
+
 app.use(
   morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined')
 );
@@ -52,6 +50,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'OK',
     timestamp: new Date().toISOString(),
+    db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
   });
 });
 
@@ -67,14 +66,17 @@ app.use('/api/location', locationRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-console.log("CLOUDINARY KEY:", process.env.CLOUDINARY_API_KEY);
-// Start Server
+// Start Server only after DB connects
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(
-    `🚀 ShopZen Server running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`
-  );
+import mongoose from 'mongoose';
+
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(
+      `🚀 ShopZen Server running on port ${PORT} [${process.env.NODE_ENV || 'development'}]`
+    );
+  });
 });
 
 export default app;
