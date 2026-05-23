@@ -617,18 +617,25 @@ export default function Home() {
 
         /* ── Categories ── */
         .categories-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
-          gap: 10px;
-        }
-        .category-card {
-          display: flex; flex-direction: column; align-items: center; gap: 5px;
-          padding: 12px 6px; border-radius: 14px; text-decoration: none;
-          transition: transform 0.2s, box-shadow 0.2s;
-          background: color-mix(in srgb, var(--cat-color) 12%, var(--bg-card));
-          border: 1.5px solid color-mix(in srgb, var(--cat-color) 30%, transparent);
-          animation: fadeUp 0.4s ease both;
-        }
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 10px;
+  padding-bottom: 6px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.categories-grid::-webkit-scrollbar { display: none; }
+       .category-card {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 12px 6px; border-radius: 14px; text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+  background: color-mix(in srgb, var(--cat-color) 12%, var(--bg-card));
+  border: 1.5px solid color-mix(in srgb, var(--cat-color) 30%, transparent);
+  animation: fadeUp 0.4s ease both;
+  flex: 0 0 72px;
+  min-width: 72px;
+}
         .category-card:hover { transform: translateY(-4px) scale(1.04); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
         .cat-emoji { font-size: 1.6rem; line-height: 1; }
         .cat-label {
@@ -699,20 +706,14 @@ export default function Home() {
         }
 
         /* ── Mobile ── */
-        @media (max-width: 600px) {
-          .section { padding: 24px 14px; }
-          .categories-grid { grid-template-columns: repeat(5, 1fr); gap: 8px; }
-          .category-card { padding: 10px 4px; border-radius: 12px; }
-          .cat-emoji { font-size: 1.4rem; }
-          .cat-label { font-size: 0.62rem; }
-          .slider-card { flex: 0 0 160px; }
-          .slider-arrow { display: none; }
-        }
-        @media (max-width: 380px) {
-          .categories-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
-          .cat-emoji { font-size: 1.25rem; }
-          .cat-label { font-size: 0.58rem; }
-        }
+       @media (max-width: 600px) {
+  .section { padding: 24px 14px; }
+  .category-card { padding: 10px 4px; border-radius: 12px; flex: 0 0 64px; min-width: 64px; }
+  .cat-emoji { font-size: 1.4rem; }
+  .cat-label { font-size: 0.62rem; }
+  .slider-card { flex: 0 0 160px; }
+  .slider-arrow { display: none; }
+}
       `}</style>
     </div>
   );
