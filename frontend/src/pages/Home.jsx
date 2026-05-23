@@ -60,7 +60,7 @@ export default function Home() {
   const [loading, setLoading]     = useState(true);
   const [bannerIdx, setBannerIdx] = useState(0);
   const [prevIdx, setPrevIdx]     = useState(null);
-  const [animDir, setAnimDir]     = useState("next"); // "next" | "prev"
+  const [animDir, setAnimDir]     = useState("next");
   const [progress, setProgress]   = useState(0);
   const [paused, setPaused]       = useState(false);
   const [search, setSearch]       = useState("");
@@ -74,7 +74,7 @@ export default function Home() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await productAPI.getAll({ limit: 20 });
+        const res = await productAPI.getAll({ limit: 100 });
         const all = res.data?.products || res.data || [];
         setProducts(all);
         setFeatured(all.slice(0, 8));
@@ -135,6 +135,12 @@ export default function Home() {
   const discountedPrice = (price, discount) =>
     discount ? Math.round(price - (price * discount) / 100) : price;
 
+  // ── FIX: derive byCategory from products ──
+ const byCategory = CATEGORIES.reduce((acc, cat) => {
+  const items = products.filter(p => p.category?.toLowerCase() === cat.id);
+  acc[cat.id] = items;
+  return acc;
+}, {});
   const cur = BANNERS[bannerIdx];
 
   return (
@@ -250,60 +256,97 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── FEATURED PRODUCTS ── */}
-      <section className="section">
-        <div className="section-header">
-          <h2 className="section-title">Featured Products</h2>
-          <Link to="/category/all" className="see-all">See All →</Link>
-        </div>
-        {loading ? (
-          <div className="products-grid">
-            {Array(8).fill(0).map((_, i) => <div key={i} className="product-skeleton" />)}
-          </div>
-        ) : (
-          <div className="products-grid">
-            {featured.map((p, idx) => (
-              <div key={p._id} className="product-card" style={{ animationDelay: `${idx * 60}ms` }}>
-                <Link to={`/products/${p._id}`} className="product-img-wrap">
-                  {p.images?.[0]
-                    ? <img src={p.images[0]} alt={p.name} className="product-img" loading="lazy" />
-                    : <div className="product-img-placeholder">
-                        {CATEGORIES.find(c => c.id === p.category)?.emoji || "📦"}
-                      </div>
-                  }
-                  {p.discount > 0 && <span className="badge-discount">{p.discount}% OFF</span>}
-                </Link>
-                <button
-                  className={`wishlist-btn ${wishlist.includes(p._id) ? "active" : ""}`}
-                  onClick={() => toggleWishlist(p._id)}
-                  title="Add to wishlist"
-                >
-                  {wishlist.includes(p._id) ? "❤️" : "🤍"}
-                </button>
-                <div className="product-info">
-                  <p className="product-category">{p.category}</p>
-                  <h3 className="product-name">{p.name}</h3>
-                  <div className="product-rating">
-                    {"★".repeat(Math.floor(p.ratings || 0))}{"☆".repeat(5 - Math.floor(p.ratings || 0))}
-                    <span className="rating-count">({p.numReviews})</span>
-                  </div>
-                  <div className="product-price-row">
-                    <span className="product-price">₹{discountedPrice(p.price, p.discount)}</span>
-                    {p.discount > 0 && <span className="product-mrp">₹{p.price}</span>}
-                  </div>
-                  <button
-                    className="btn-add-cart"
-                    onClick={() => addToCart({ ...p, quantity: 1 })}
-                    disabled={p.stock === 0}
+      {/* ── PRODUCTS BY CATEGORY ── */}
+      {Object.entries(byCategory).map(([catId, items]) => {
+        const catInfo = CATEGORIES.find(c => c.id === catId);
+        const sliderId = `slider-${catId}`;
+        return (
+          <section className="section cat-section" key={catId}>
+            <div className="section-header">
+              <div className="cat-section-title">
+                {catInfo && (
+                  <span
+                    className="cat-section-emoji"
+                    style={{ background: `${catInfo.color}22`, color: catInfo.color }}
                   >
-                    {p.stock === 0 ? "Out of Stock" : "Add to Cart 🛒"}
-                  </button>
-                </div>
+                    {catInfo.emoji}
+                  </span>
+                )}
+                <h2 className="section-title">{catInfo?.label || catId}</h2>
+                <span className="cat-section-count">{items.length} items</span>
               </div>
-            ))}
-          </div>
-        )}
-      </section>
+              <Link to={`/category/${catId}`} className="see-all">View All →</Link>
+            </div>
+
+            <div className="slider-wrapper">
+              <button
+                className="slider-arrow slider-arrow-left"
+                onClick={() =>
+                  document.getElementById(sliderId).scrollBy({ left: -640, behavior: "smooth" })
+                }
+              >‹</button>
+
+              <div className="products-slider" id={sliderId}>
+                {loading
+                  ? Array(5).fill(0).map((_, i) => (
+                      <div key={i} className="product-skeleton slider-card" />
+                    ))
+                  : items.map((p, idx) => (
+                      <div
+                        key={p._id}
+                        className="product-card slider-card"
+                        style={{ animationDelay: `${idx * 40}ms` }}
+                      >
+                        <Link to={`/products/${p._id}`} className="product-img-wrap">
+                          {p.images?.[0]
+                            ? <img src={p.images[0]} alt={p.name} className="product-img" loading="lazy" />
+                            : <div className="product-img-placeholder">{catInfo?.emoji || "📦"}</div>
+                          }
+                          {p.discount > 0 && (
+                            <span className="badge-discount">{p.discount}% OFF</span>
+                          )}
+                        </Link>
+                        <button
+                          className={`wishlist-btn ${wishlist.includes(p._id) ? "active" : ""}`}
+                          onClick={() => toggleWishlist(p._id)}
+                          title="Add to wishlist"
+                        >
+                          {wishlist.includes(p._id) ? "❤️" : "🤍"}
+                        </button>
+                        <div className="product-info">
+                          <h3 className="product-name">{p.name}</h3>
+                          <div className="product-rating">
+                            {"★".repeat(Math.floor(p.ratings || 0))}
+                            {"☆".repeat(5 - Math.floor(p.ratings || 0))}
+                            <span className="rating-count">({p.numReviews})</span>
+                          </div>
+                          <div className="product-price-row">
+                            <span className="product-price">₹{discountedPrice(p.price, p.discount)}</span>
+                            {p.discount > 0 && <span className="product-mrp">₹{p.price}</span>}
+                          </div>
+                          <button
+                            className="btn-add-cart"
+                            onClick={() => addToCart({ ...p, quantity: 1 })}
+                            disabled={p.stock === 0}
+                          >
+                            {p.stock === 0 ? "Out of Stock" : "Add to Cart 🛒"}
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                }
+              </div>
+
+              <button
+                className="slider-arrow slider-arrow-right"
+                onClick={() =>
+                  document.getElementById(sliderId).scrollBy({ left: 640, behavior: "smooth" })
+                }
+              >›</button>
+            </div>
+          </section>
+        );
+      })}
 
       <style>{`
         :root {
@@ -325,20 +368,81 @@ export default function Home() {
           --accent: #FF6B35;
         }
 
-       .home-page { min-height: 100vh; background: var(--bg-page); isolation: isolate; }
+        .home-page { min-height: 100vh; background: var(--bg-page); isolation: isolate; }
 
+        /* ── Category sections ── */
+        .cat-section { padding-bottom: 8px; }
+        .cat-section-title {
+          display: flex; align-items: center; gap: 10px;
+        }
+        .cat-section-emoji {
+          width: 36px; height: 36px; border-radius: 10px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 1.2rem; flex-shrink: 0;
+        }
+        .cat-section-count {
+          font-size: 0.78rem; font-weight: 600;
+          color: var(--text-muted);
+          background: var(--bg-hover);
+          padding: 2px 8px; border-radius: 20px;
+        }
+        .cat-section .section-title { margin-bottom: 0; }
+
+        /* ── Slider ── */
+        .slider-wrapper {
+          position: relative;
+          margin: 0 -4px;
+        }
+        .slider-arrow {
+          position: absolute;
+          top: 50%; transform: translateY(-60%);
+          z-index: 10;
+          width: 38px; height: 38px; border-radius: 50%;
+          border: 1.5px solid var(--border);
+          background: var(--bg-card);
+          color: var(--text);
+          font-size: 1.5rem;
+          cursor: pointer;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+          transition: all 0.2s;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .slider-arrow:hover {
+          background: var(--accent); color: #fff;
+          border-color: var(--accent);
+          box-shadow: 0 6px 20px rgba(255,107,53,0.35);
+          transform: translateY(-60%) scale(1.1);
+        }
+        .slider-arrow-left  { left: -18px; }
+        .slider-arrow-right { right: -18px; }
+
+        .products-slider {
+          display: flex;
+          gap: 14px;
+          overflow-x: auto;
+          scroll-snap-type: x mandatory;
+          -webkit-overflow-scrolling: touch;
+          padding: 8px 4px 12px;
+          scrollbar-width: none;
+        }
+        .products-slider::-webkit-scrollbar { display: none; }
+
+        .slider-card {
+          flex: 0 0 190px;
+          scroll-snap-align: start;
+          min-height: 300px;
+        }
 
         /* ── CAROUSEL ── */
         .hero-banner {
-  position: relative;
-  height: 360px;
-  overflow: hidden;
-  user-select: none;
-  isolation: isolate;
-}
+          position: relative;
+          height: 360px;
+          overflow: hidden;
+          user-select: none;
+          isolation: isolate;
+        }
         @media (max-width: 600px) { .hero-banner { height: 280px; } }
 
-        /* Slides */
         .slide {
           position: absolute; inset: 0;
           display: flex; align-items: center;
@@ -348,14 +452,12 @@ export default function Home() {
 
         .slide-hidden { opacity: 0; pointer-events: none; transform: translateX(100%); }
 
-        /* Enter animations */
         .slide-enter.from-right {
           animation: slideFromRight 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
         .slide-enter.from-left {
           animation: slideFromLeft 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
-        /* Exit animations */
         .slide-exit.to-left {
           animation: slideToLeft 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
@@ -380,7 +482,6 @@ export default function Home() {
           to   { transform: translateX(100%); opacity: 0; }
         }
 
-        /* Decorative shapes */
         .deco-shapes {
           position: absolute; inset: 0; overflow: hidden; pointer-events: none;
         }
@@ -398,7 +499,6 @@ export default function Home() {
 
         .radial-glow { position: absolute; inset: 0; pointer-events: none; }
 
-        /* Hero content */
         .hero-content { position: relative; z-index: 2; max-width: 520px; }
 
         .hero-tag {
@@ -459,7 +559,6 @@ export default function Home() {
         }
         .btn-hero-ghost:hover { background: rgba(255,255,255,0.15); }
 
-        /* Arrows */
         .arrow {
           position: absolute; top: 50%; transform: translateY(-50%);
           z-index: 10; width: 40px; height: 40px; border-radius: 50%;
@@ -474,7 +573,6 @@ export default function Home() {
         .arrow-right { right: 16px; }
         @media (max-width: 600px) { .arrow { display: none; } }
 
-        /* Bottom controls */
         .carousel-controls {
           position: absolute; bottom: 18px; left: 48px; right: 48px;
           z-index: 10; display: flex; justify-content: space-between; align-items: center;
@@ -497,7 +595,6 @@ export default function Home() {
         .sep      { font-size: 0.75rem; color: rgba(255,255,255,0.4); margin: 0 1px; }
         .total-num { font-size: 0.75rem; color: rgba(255,255,255,0.5); }
 
-        /* Progress bar */
         .progress-track {
           position: absolute; bottom: 0; left: 0; right: 0;
           height: 3px; background: rgba(255,255,255,0.12); z-index: 10;
@@ -540,11 +637,6 @@ export default function Home() {
         }
 
         /* ── Products ── */
-        .products-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-          gap: 18px;
-        }
         .product-skeleton {
           height: 310px; border-radius: 18px;
           background: linear-gradient(90deg, var(--bg-hover) 25%, var(--bg-card) 50%, var(--bg-hover) 75%);
@@ -586,10 +678,6 @@ export default function Home() {
         .wishlist-btn:hover { transform:scale(1.15); }
 
         .product-info { padding: 12px; }
-        .product-category {
-          font-size:0.7rem; font-weight:700; color:var(--accent);
-          text-transform:uppercase; letter-spacing:0.05em; margin:0 0 3px;
-        }
         .product-name {
           font-size:0.92rem; font-weight:700; color:var(--text);
           margin:0 0 5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
@@ -617,7 +705,8 @@ export default function Home() {
           .category-card { padding: 10px 4px; border-radius: 12px; }
           .cat-emoji { font-size: 1.4rem; }
           .cat-label { font-size: 0.62rem; }
-          .products-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+          .slider-card { flex: 0 0 160px; }
+          .slider-arrow { display: none; }
         }
         @media (max-width: 380px) {
           .categories-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
